@@ -1,0 +1,6 @@
+name: MiningGame
+version: '1.0-SNAPSHOT'
+main: plugin.mininggame.Main
+api-version: '1.21'
+commands:
+  miningGame:
