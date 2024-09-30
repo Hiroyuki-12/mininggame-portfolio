@@ -110,23 +110,17 @@ public class MiningGameCommand extends BaseCommand implements  Listener {
      * &#064;return　現在実行しているプレイヤーのスコア情報
      */
     private Player getPlayerScore(org.bukkit.entity.Player player) {
-        Player executingPlayer = new Player(player.getName());
-
-        if (playerList.isEmpty()) {
-            executingPlayer = addNewPlayer(player);
-        } else {
-            executingPlayer = playerList.stream()
-                    .findFirst()
-                    .map(ps -> ps.getPlayerName().equals(player.getName())
-                            ? ps
-                            : addNewPlayer(player)).orElse(executingPlayer);
-        }
+        Player executingPlayer = playerList.stream()
+                .filter(ps -> ps.getPlayerName().equals(player.getName()))  // プレイヤー名でフィルタリング
+                .findFirst()
+                .orElseGet(() -> addNewPlayer(player));  // 見つからなければ新規プレイヤーを追加
 
         executingPlayer.setGameTime(GAME_TIME);
         executingPlayer.setScore(0);
         removePotionEffect(player);
         return executingPlayer;
     }
+
 
     /**
      * 新規のプレイヤー情報をリストに追加します
