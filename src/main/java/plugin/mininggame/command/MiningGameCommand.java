@@ -117,7 +117,11 @@ public class MiningGameCommand extends BaseCommand implements  Listener {
 
         executingPlayer.setGameTime(GAME_TIME);
         executingPlayer.setScore(0);
-        removePotionEffect(player);
+        // すべてのポーション効果を削除したい場合
+        removePotionEffect(player, new ArrayList<>());
+
+        // 特定のポーション効果のみを削除したい場合（例: スピード効果のみを削除）
+        //removePotionEffect(player, Arrays.asList(PotionEffectType.SPEED));
         return executingPlayer;
     }
 
@@ -203,7 +207,11 @@ public class MiningGameCommand extends BaseCommand implements  Listener {
                         0,60, 0);
 
                 removeOres(player.getWorld());
-                removePotionEffect(player);
+                // すべてのポーション効果を削除したい場合
+                removePotionEffect(player, new ArrayList<>());
+
+                // 特定のポーション効果のみを削除したい場合（例: スピード効果のみを削除）
+                //removePotionEffect(player, Arrays.asList(PotionEffectType.SPEED));
                 restorePlayerInventory(player);
                 playerScoreData.insert(
                         new PlayerScore(nowPlayer.getPlayerName()
@@ -279,15 +287,28 @@ public class MiningGameCommand extends BaseCommand implements  Listener {
     }
 
     /**
-     * プレイヤーに設定されている特殊効果を除外します
+     * 指定されたプレイヤーから指定された特殊効果を除外します。
+     * 特定の効果だけを削除したい場合は、effects リストに削除したい効果を追加してください。
+     * 空のリストを渡すとすべてのポーション効果が削除されます。
      *
-     * @param player　コマンドを実行したプレイヤー
+     * @param player コマンドを実行したプレイヤー
+     * @param effects 削除したいポーション効果のリスト
      */
-    private void removePotionEffect(org.bukkit.entity.Player player) {
-        player.getActivePotionEffects().stream()
-                .map(PotionEffect::getType)
-                .forEach(player::removePotionEffect);
+    private void removePotionEffect(org.bukkit.entity.Player player, List<org.bukkit.potion.PotionEffectType> effects) {
+        if (effects.isEmpty()) {
+            // リストが空の場合、すべてのポーション効果を削除
+            player.getActivePotionEffects().stream()
+                    .map(PotionEffect::getType)
+                    .forEach(player::removePotionEffect);
+        } else {
+            // リストに含まれるポーション効果だけを削除
+            player.getActivePotionEffects().stream()
+                    .map(PotionEffect::getType)
+                    .filter(effects::contains) // 指定された効果のみ削除
+                    .forEach(player::removePotionEffect);
+        }
     }
+
 
     /**
      * プレイヤーのインベントリと装備スロットのアイテムを保存します。
