@@ -7,7 +7,6 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -15,7 +14,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.potion.PotionEffect;
 import plugin.mininggame.Main;
-import plugin.mininggame.data.ExecutingPlayer;
+import plugin.mininggame.data.Player;
 import plugin.mininggame.mapper.data.PlayerScore;
 import plugin.mininggame.PlayerScoreData;
 
@@ -33,7 +32,7 @@ public class MiningGameCommand extends BaseCommand implements  Listener {
     public static final int GAME_TIME = 60;
     private final Main main;
     private final PlayerScoreData playerScoreData = new PlayerScoreData();
-    private final List<ExecutingPlayer> executingPlayerList = new ArrayList<>();
+    private final List<Player> playerList = new ArrayList<>();
     private final List<Location> oreLocations = new ArrayList<>();
     private boolean isGameRunning = false;
     private  static final String LIST = "List";
@@ -47,20 +46,20 @@ public class MiningGameCommand extends BaseCommand implements  Listener {
 
 
     @Override
-    public boolean onExecutePlayerCommand(Player player, Command command, String label, String[] args) {
+    public boolean onExecutePlayerCommand(org.bukkit.entity.Player player, Command command, String label, String[] args) {
         //最初の引数が「list」だったらスコア一覧表示して処理を終了する
         if (args.length == 1 && LIST.equalsIgnoreCase(args[0])) {
             sendPlayerScoreList(player);
             return false;
         }
 
-        ExecutingPlayer nowExecutingPlayer = getPlayerScore(player);
+        Player nowPlayer = getPlayerScore(player);
 
         initPlayerStatus(player);
 
         deployOres(player, player.getWorld());
 
-        gamePlay(player, nowExecutingPlayer);
+        gamePlay(player, nowPlayer);
         return true;
     }
 
@@ -73,7 +72,7 @@ public class MiningGameCommand extends BaseCommand implements  Listener {
      * 現在登録されているスコアの一覧をメッセージに送る
      * @param player　プレイヤー
      */
-    private void sendPlayerScoreList(Player player) {
+    private void sendPlayerScoreList(org.bukkit.entity.Player player) {
         List<PlayerScore> playerScoreList = playerScoreData.selectList();
         for (PlayerScore playerScore : playerScoreList) {
             player.sendMessage(playerScore.getId() + " | "
@@ -89,7 +88,7 @@ public class MiningGameCommand extends BaseCommand implements  Listener {
      * 体力と空腹値を最大にして、ネザライトのピッケルを装備する
      * @param player　コマンドを実行したプレイヤー
      */
-    private void initPlayerStatus(Player player) {
+    private void initPlayerStatus(org.bukkit.entity.Player player) {
 
 
         // 体力と空腹値を最大にする
@@ -110,24 +109,22 @@ public class MiningGameCommand extends BaseCommand implements  Listener {
      * @param player　コマンドを実行したプレイヤー
      * &#064;return　現在実行しているプレイヤーのスコア情報
      */
-    private ExecutingPlayer getPlayerScore(Player player) {
-        ExecutingPlayer executingPlayer = new ExecutingPlayer(player.getName());
-
-        if (executingPlayerList.isEmpty()) {
-            executingPlayer = addNewPlayer(player);
-        } else {
-            executingPlayer = executingPlayerList.stream()
-                    .findFirst()
-                    .map(ps -> ps.getPlayerName().equals(player.getName())
-                            ? ps
-                            : addNewPlayer(player)).orElse(executingPlayer);
-        }
+    private Player getPlayerScore(org.bukkit.entity.Player player) {
+        Player executingPlayer = playerList.stream()
+                .filter(ps -> ps.getPlayerName().equals(player.getName()))  // プレイヤー名でフィルタリング
+                .findFirst()
+                .orElseGet(() -> addNewPlayer(player));  // 見つからなければ新規プレイヤーを追加
 
         executingPlayer.setGameTime(GAME_TIME);
         executingPlayer.setScore(0);
-        removePotionEffect(player);
+        // すべてのポーション効果を削除したい場合
+        removePotionEffect(player, new ArrayList<>());
+
+        // 特定のポーション効果のみを削除したい場合（例: スピード効果のみを削除）
+        //removePotionEffect(player, Arrays.asList(PotionEffectType.SPEED));
         return executingPlayer;
     }
+
 
     /**
      * 新規のプレイヤー情報をリストに追加します
@@ -135,9 +132,9 @@ public class MiningGameCommand extends BaseCommand implements  Listener {
      * @param player　コマンドを実行したプレイヤー
      * @return 新規プレイヤー
      */
-    private ExecutingPlayer addNewPlayer(Player player) {
-        ExecutingPlayer newPlayer = new ExecutingPlayer(player.getName());
-        executingPlayerList.add(newPlayer);
+    private Player addNewPlayer(org.bukkit.entity.Player player) {
+        Player newPlayer = new Player(player.getName());
+        playerList.add(newPlayer);
         return newPlayer;
     }
 
@@ -150,7 +147,7 @@ public class MiningGameCommand extends BaseCommand implements  Listener {
      * @param player　コマンドを実行したプレイヤー
      * @param world　コマンドを実行したプレイヤーが所属するワールド
      */
-    private void deployOres(Player player, World world) {
+    private void deployOres(org.bukkit.entity.Player player, World world) {
         Location playerLocation = player.getLocation();
         Location startLocation = playerLocation.clone();
         startLocation.setY(playerLocation.getBlockY());
@@ -196,49 +193,55 @@ public class MiningGameCommand extends BaseCommand implements  Listener {
     /**
      * ゲームを実行します。規定の時間内に鉱石を採掘するとスコアが加算されます。合計スコアを時間経過後に表示します・
      * @param player　コマンドを実行したプレイヤー
-     * @param nowExecutingPlayer　プレイヤースコア情報
+     * @param nowPlayer　プレイヤースコア情報
      */
-    private void gamePlay(Player player, ExecutingPlayer nowExecutingPlayer) {
+    private void gamePlay(org.bukkit.entity.Player player, Player nowPlayer) {
         isGameRunning = true;
         player.sendTitle("ゲーム開始", "" , 0, 30, 0);
 
         Bukkit.getScheduler().runTaskTimer(main, Runnable -> {
-            if(nowExecutingPlayer.getGameTime() <= 0) {
+            if(nowPlayer.getGameTime() <= 0) {
                 Runnable.cancel();
                 isGameRunning = false;
-                player.sendTitle("ゲームが終了しました。", nowExecutingPlayer.getPlayerName() + " 合計 " + nowExecutingPlayer.getScore() + "点！",
+                player.sendTitle("ゲームが終了しました。", nowPlayer.getPlayerName() + " 合計 " + nowPlayer.getScore() + "点！",
                         0,60, 0);
 
                 removeOres(player.getWorld());
-                removePotionEffect(player);
+                // すべてのポーション効果を削除したい場合
+                removePotionEffect(player, new ArrayList<>());
+
+                // 特定のポーション効果のみを削除したい場合（例: スピード効果のみを削除）
+                //removePotionEffect(player, Arrays.asList(PotionEffectType.SPEED));
                 restorePlayerInventory(player);
                 playerScoreData.insert(
-                        new PlayerScore(nowExecutingPlayer.getPlayerName()
-                                , nowExecutingPlayer.getScore()));
+                        new PlayerScore(nowPlayer.getPlayerName()
+                                , nowPlayer.getScore()));
+
+                // ゲーム終了後にプレイヤーをリストから削除する処理を追加
+                removePlayerFromList(player);
+
                 return;
             }
 
-            if(nowExecutingPlayer.getGameTime() == 30) {
+            if(nowPlayer.getGameTime() == 30) {
                 player.sendTitle("30秒経過！", "残り半分です。", 0, 20, 0);
             }
 
-            nowExecutingPlayer.setGameTime(nowExecutingPlayer.getGameTime() - 1);
+            nowPlayer.setGameTime(nowPlayer.getGameTime() - 1);
         }, 20L, 20L);
     }
 
-
     @EventHandler
-
     public void onBlockBreak(BlockBreakEvent e) {
-        Player player = e.getPlayer();
+        org.bukkit.entity.Player player = e.getPlayer();
         Block block = e.getBlock();
         Material blockType = block.getType();
 
-        if (executingPlayerList.isEmpty() || !isGameRunning) {
+        if (playerList.isEmpty() || !isGameRunning) {
             return;
         }
 
-        executingPlayerList.stream()
+        playerList.stream()
                 .filter(p -> p.getPlayerName().equals(player.getName()))
                 .findFirst()
                 .ifPresent(p -> {
@@ -246,9 +249,9 @@ public class MiningGameCommand extends BaseCommand implements  Listener {
                     int newScore = p.getScore() + scoreToAdd;
                     p.setScore(newScore);
                     player.sendMessage("鉱石を破壊した！"
-                                    + blockType.name() + " で "
-                                    + scoreToAdd + " 点獲得。現在のスコアは"
-                                    + newScore + "点！");
+                            + blockType.name() + " で "
+                            + scoreToAdd + " 点獲得。現在のスコアは"
+                            + newScore + "点！");
                 });
     }
 
@@ -284,22 +287,35 @@ public class MiningGameCommand extends BaseCommand implements  Listener {
     }
 
     /**
-     * プレイヤーに設定されている特殊効果を除外します
+     * 指定されたプレイヤーから指定された特殊効果を除外します。
+     * 特定の効果だけを削除したい場合は、effects リストに削除したい効果を追加してください。
+     * 空のリストを渡すとすべてのポーション効果が削除されます。
      *
-     * @param player　コマンドを実行したプレイヤー
+     * @param player コマンドを実行したプレイヤー
+     * @param effects 削除したいポーション効果のリスト
      */
-    private void removePotionEffect(Player player) {
-        player.getActivePotionEffects().stream()
-                .map(PotionEffect::getType)
-                .forEach(player::removePotionEffect);
+    private void removePotionEffect(org.bukkit.entity.Player player, List<org.bukkit.potion.PotionEffectType> effects) {
+        if (effects.isEmpty()) {
+            // リストが空の場合、すべてのポーション効果を削除
+            player.getActivePotionEffects().stream()
+                    .map(PotionEffect::getType)
+                    .forEach(player::removePotionEffect);
+        } else {
+            // リストに含まれるポーション効果だけを削除
+            player.getActivePotionEffects().stream()
+                    .map(PotionEffect::getType)
+                    .filter(effects::contains) // 指定された効果のみ削除
+                    .forEach(player::removePotionEffect);
+        }
     }
+
 
     /**
      * プレイヤーのインベントリと装備スロットのアイテムを保存します。
      * ゲーム開始時に呼び出し、ゲーム終了後に元に戻すために使用します。
      * @param player　コマンドを実行したプレイヤー
      */
-    private void savePlayerInventory(Player player) {
+    private void savePlayerInventory(org.bukkit.entity.Player player) {
 
         playerInventories.put(player.getUniqueId(), player.getInventory().getContents().clone());
 
@@ -315,7 +331,7 @@ public class MiningGameCommand extends BaseCommand implements  Listener {
      * ゲーム中に獲得したアイテムはそのまま残ります。
      * @param player　コマンドを実行したプレイヤー
      */
-    private void restorePlayerInventory(Player player) {
+    private void restorePlayerInventory(org.bukkit.entity.Player player) {
         UUID playerUUID = player.getUniqueId();
 
         if (playerInventories.containsKey(playerUUID)) {
@@ -335,7 +351,11 @@ public class MiningGameCommand extends BaseCommand implements  Listener {
         }
     }
 
-
-
-
+    /**
+     * 指定されたプレイヤーをplayerListから削除します
+     * @param player　リストから削除する対象のプレイヤー
+     */
+    private void removePlayerFromList(org.bukkit.entity.Player player) {
+        playerList.removeIf(p -> p.getPlayerName().equals(player.getName()));
+    }
 }
