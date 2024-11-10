@@ -3,9 +3,9 @@
 Javaコースミニゲーム開発編　「鉱石採掘ゲーム」
 
 ## デモ動画
-<video src="[https://github.com/user-attachments/assets/88007f69-c0a1-44ed-bf8a-41ad14110c11]" controls="controls" style="max-width: 100%;">
-  Your browser does not support the video tag.
-</video>
+## デモ動画
+[デモ動画を再生する](https://github.com/user-attachments/assets/88007f69-c0a1-44ed-bf8a-41ad14110c11)
+
 
 ## ゲームの概要
 - 制限時間内（60秒）まで鉱石を採掘し、点数を競うミニゲーム
