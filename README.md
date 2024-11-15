@@ -24,11 +24,12 @@ MiningGameは、Minecraft上でJavaとMySQLを使用して構築された鉱石�
 
 
 # 使用技術
-- 言語: Java
-- フレームワーク: Spigot API, MyBatis
-- データベース: MySQL
-- ORM: MyBatis
-- デプロイ環境: Minecraftサーバー
+![Java](https://img.shields.io/badge/Language-Java-007396?logo=java&logoColor=white)
+![MySQL](https://img.shields.io/badge/Database-MySQL-4479A1?logo=mysql&logoColor=white)
+![MyBatis](https://img.shields.io/badge/ORM-MyBatis-000000?logo=mybatis&logoColor=white)
+![Spigot](https://img.shields.io/badge/Framework-Spigot_API-FFB13B?logo=minecraft&logoColor=white)
+![Git](https://img.shields.io/badge/Version%20Control-Git-F05032?logo=git&logoColor=white)
+![GitHub](https://img.shields.io/badge/Repo-GitHub-181717?logo=github&logoColor=white)
 
 ## 機能概要
 
@@ -40,14 +41,14 @@ MiningGameは、Minecraft上でJavaとMySQLを使用して構築された鉱石�
   /mining gameコマンドでゲームを開始し、鉱石の生成、スコア管理、インベントリの保存・復元を行います。
 
 ## データベース接続とスコア管理
-- MyBatisを用いたデータアクセス
+- MyBatisを用いたデータアクセス:
   PlayerScoreDataクラスを使用して、MySQLデータベースと接続し、プレイヤーのスコアデータを永続化しています。
   
 **ER図**
-スコア管理のためのデータベース構造は以下の通りです。
+- スコア管理のためのデータベース構造は以下の通りです。
 
-   ```sql
-   +----------------+
+```sql
++----------------+
 |  player_score  |
 +----------------+
 | id             | INT (PK, AUTO_INCREMENT) |
@@ -58,7 +59,7 @@ MiningGameは、Minecraft上でJavaとMySQLを使用して構築された鉱石�
 ```
 
 **MyBatis設定ファイル**
-MyBatisの設定ファイルは以下の通りです：
+- MyBatisの設定ファイルは以下の通りです：
 ```xml
 <configuration>
     <environments default="development">
@@ -78,7 +79,7 @@ MyBatisの設定ファイルは以下の通りです：
 </configuration>
 ```
 
-#コア機能と技術的工夫
+## コア機能と技術的工夫
 **インベントリの保存と復元**
 - 機能概要:
   ゲーム開始前にプレイヤーのインベントリと装備状態を保存し、終了後に元の状態を復元します。これにより、ゲーム中のインベントリ変化が影響しないように設計しています。
@@ -108,11 +109,11 @@ private void restorePlayerInventory(org.bukkit.entity.Player player) {
 }
 ```
 
-#鉱石のランダム配置
--機能概要:
-プレイヤーの5ブロック前方にランダムな鉱石を5×5×5の範囲で生成し、確率によって異なる鉱石が出現する仕組みを実装しています。
+## 鉱石のランダム配置
+- 機能概要:
+  プレイヤーの5ブロック前方にランダムな鉱石を5×5×5の範囲で生成し、確率によって異なる鉱石が出現する仕組みを実装しています。
 
--コード例:
+- コード例:
 ```java
 private void deployOres(org.bukkit.entity.Player player, World world) {
     Location startLocation = player.getLocation().clone().add(player.getDirection().normalize().multiply(5));
@@ -131,7 +132,7 @@ private void deployOres(org.bukkit.entity.Player player, World world) {
 }
 ```
 
-#スコアリング
+## スコアリング
 - 機能概要:
   鉱石の種類に応じてスコアを設定し、採掘した鉱石ごとにプレイヤーのスコアを加算します。
 
